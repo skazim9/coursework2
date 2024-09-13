@@ -4,9 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="4f0ea801-4a8d-4d88-97d8-5ab52680679c" name="Changes" comment="init">
-      <change afterPath="$PROJECT_DIR$/.flake8" afterDir="false" />
+    <list default="true" id="4f0ea801-4a8d-4d88-97d8-5ab52680679c" name="Changes" comment="init update">
+      <change afterPath="$PROJECT_DIR$/data/vacancies.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/vacancy.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/poetry.lock" beforeDir="false" afterPath="$PROJECT_DIR$/poetry.lock" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/pyproject.toml" beforeDir="false" afterPath="$PROJECT_DIR$/pyproject.toml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -80,11 +82,20 @@
       <option name="project" value="LOCAL" />
       <updated>1726220426761</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary="init update">
+      <option name="closed" value="true" />
+      <created>1726225059301</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1726225059301</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="init" />
-    <option name="LAST_COMMIT_MESSAGE" value="init" />
+    <MESSAGE value="init update" />
+    <option name="LAST_COMMIT_MESSAGE" value="init update" />
   </component>
 </project>
