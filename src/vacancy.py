@@ -1,22 +1,59 @@
 class Vacancy:
-    """Класс для описания вакансии."""
+    """Класс для представления вакансий"""
+    __slots__ = ("name", "url", "requirement", "responsibility", "salary")
 
-    __slots__ = ('title', 'area', 'url', 'salary_from', 'salary_to', 'description')
+    def __init__(self, name: str, url: str, requirement: str, responsibility: str, salary=None):
+        """Инициализатор класса Vacancy"""
+        self.name = name
+        self.url = url
+        self.requirement = requirement
+        self.responsibility = responsibility
+        self.salary = self.__salary_validation(salary)
 
-    def __init__(self, title: str, area: str, url: str, salary_from: str, salary_to: str, description: str) -> None:
-        self.title: str = title
-        self.area: str = area
-        self.url: str = url
-        self.salary_from: str = salary_from if salary_from else "0"
-        self.salary_to: str = salary_to if salary_to else "0"
-        self.description: str = description
+    @staticmethod
+    def __salary_validation(salary: int):
+        """Валидация зарплаты"""
+        if salary:
+            return salary
+        return 0
 
-    def __str__(self) -> str:
-        return f"{self.title}, {self.area}, Зарплата: от {self.salary_from} до {self.salary_to}, Ссылка: {self.url}"
+    @classmethod
+    def cast_to_object_list(cls, vacancies: list[dict]) -> list["Vacancy"]:
+        """Возвращает список экземпляров Vacancy из списка словарей"""
 
-    def __lt__(self, other: "Vacancy") -> bool:
-        return int(self.salary_to) < int(other.salary_to)
+        return [cls(**vac) for vac in vacancies]
 
-    def validate(self) -> None:
-        if not self.title or not self.url:
-            raise ValueError("Название и ссылка на вакансию обязательны.")
+    def __str__(self):
+        """Метод строкового предсиавления вакансий"""
+
+        return (f"{self.name} (Зарплата: {self.salary if self.salary else 'не указана'}).\nТребования: {self.requirement}.\n"
+                f"Обязанности: {self.responsibility}.\nСсылка на вакансию: {self.url}")
+
+    @classmethod
+    def __verify_data(cls, other):
+        """Проверка типа данных"""
+        if not isinstance(other, (float, Vacancy)):
+            raise TypeError
+
+        return other if isinstance(other, float) else other.salary
+
+    def __eq__(self, other):
+        """Метод сравнения вакансий (=)"""
+        sal = self.__verify_data(other)
+        return self.salary == sal
+
+    def __lt__(self, other):
+        """Метод сравнения вакансий (<)"""
+        sal = self.__verify_data(other)
+        return self.salary < sal
+
+    def __le__(self, other):
+        """Метод сравнения вакансий (<=)"""
+        sal = self.__verify_data(other)
+        return self.salary <= sal
+
+    def to_dict(self):
+        """Возвращает словарь с данными о вакансии из экземпляра класса Vacancy"""
+        return {"name": self.name, "url": self.url, "requirement": self.requirement,
+                "responsibility": self.responsibility, "salary": self.salary}
+

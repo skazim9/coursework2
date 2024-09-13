@@ -1,61 +1,78 @@
-import abc
 import json
-import os
-from typing import List
+import os.path
+from abc import ABC, abstractmethod
+from json import JSONDecodeError
 
+from config import DATA_DIR
 from src.vacancy import Vacancy
 
 
-class AbstractVacancyStorage(abc.ABC):
-    """Абстрактный класс для работы с файлами"""
 
-    @abc.abstractmethod
+class BaseSaver(ABC):
+
+    @abstractmethod
+    def add_vacancy(self, vacancy):
+        pass
+
+    @abstractmethod
+    def get_vacancy_by_vacancy_name(self, word):
+        pass
+
+    @abstractmethod
+    def del_vacancy(self, vacancy):
+        pass
+
+
+class JSONSaver(BaseSaver):
+
+    def __init__(self, filename="vacancies.json"):
+        """Инициализатор класса JSONSaver"""
+        self.__file_path = os.path.join(DATA_DIR, filename)
+
+    def __save_to_file(self, vacancies: list[dict]) -> None:
+        """Сохраняет данные в json-файл"""
+        with open(self.__file_path, "w", encoding="utf-8") as f:
+            json.dump(vacancies, f, ensure_ascii=False)
+
+    def __read_file(self) -> list[dict]:
+        """Считывает данные из json-файла"""
+        try:
+            with open(self.__file_path, encoding="utf-8") as f:
+                data = json.load(f)
+        except FileNotFoundError:
+            data = []
+        except JSONDecodeError:
+            data = []
+
+        return data
+
     def add_vacancy(self, vacancy: Vacancy) -> None:
-        """Добавление вакансии в файл"""
-        pass
+        """Добавляет вакансию в файл"""
+        vacancies_list = self.__read_file()
 
-    @abc.abstractmethod
-    def get_vacancies(self, criterion: str) -> List[Vacancy]:
-        """Получение вакансий по критериям"""
-        pass
+        if vacancy.url not in [vac["url"] for vac in vacancies_list]:
+            vacancies_list.append(vacancy.to_dict())
+            self.__save_to_file(vacancies_list)
 
-    @abc.abstractmethod
-    def remove_vacancy(self, vacancy: Vacancy) -> None:
-        """Удаление вакансии из файла"""
-        pass
+    def add_vacancies(self, vacancies: list[dict]) -> None:
+        """Добавляет вакансии в файл"""
+        self.__save_to_file(vacancies)
 
+    def del_vacancy(self, url: str) -> None:
+        """Удаляет вакансию из файла"""
+        vacancies_list = self.__read_file()
+        for index, vac in enumerate(vacancies_list):
+            if vac["url"] == url:
+                vacancies_list.pop(index)
 
-class JSONVacancyStorage(AbstractVacancyStorage):
-    """Класс для работы с JSON-файлом"""
+        self.__save_to_file(vacancies_list)
 
-    def __init__(self, filename: str) -> None:
-        self.filename: str = filename
+    def get_vacancy_by_vacancy_name(self, word: str) -> list[Vacancy]:
+        """Возвращает список вакансий по ключевому слову в названии вакансии"""
+        found_vacancies = []
 
-    def add_vacancy(self, vacancies: List) -> None:
-        """Добавление вакансии в JSON файл"""
-        vacancies_json = [vacancy.__dict__ for vacancy in vacancies]
-        if os.path.exists(self.filename):
-            with open(self.filename, "w", encoding="utf-8") as file:
-                json.dump(vacancies_json, file, ensure_ascii=False, indent=2)
+        for vac in self.__read_file():
+            if word in vac.get("name").lower():
+                found_vacancies.append(vac)
 
-    def get_vacancies(self, criterion: str) -> List[Vacancy]:
-        """Получение вакансий по критерию"""
-        if not os.path.exists(self.filename):
-            return []
-
-        with open(self.filename, "r", encoding="utf-8") as file:
-            vacancies = json.load(file)
-            return [Vacancy(**job) for job in vacancies if criterion.lower() in str(job["description"]).lower()]
-
-    def remove_vacancy(self, vacancy_name: str) -> None:
-        """Удаление вакансии из JSON файла"""
-        if not os.path.exists(self.filename):
-            return
-
-        with open(self.filename, "r", encoding="utf-8") as file:
-            vacancies = json.load(file)
-
-            vacancies = [job for job in vacancies if not (job["name"] == vacancy_name)]
-
-        with open(self.filename, "w", encoding="utf-8") as file:
-            json.dump(vacancies, file)
+        return Vacancy.cast_to_object_list(found_vacancies)

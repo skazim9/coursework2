@@ -1,61 +1,66 @@
-from abc import ABC, abstractmethod
-
 import requests
 
+from abc import ABC, abstractmethod
 
-class AbstractVacancyAPI(ABC):
-    """Абстрактный класс для работы с API внешних сервисов"""
+
+class Parser(ABC):
 
     @abstractmethod
-    def fetch_vacancies(self, *args, **kwargs):
-        """Абстрактный метод получения вакансий"""
+    def load_vacancies(self, keyword):
         pass
 
 
-class HHVacancyAPI(AbstractVacancyAPI):
-    """Класс для работы с API hh.ru"""
+class HeadHunterAPI(Parser):
+    """Класс для работы с API HeadHunter"""
 
     def __init__(self):
-        """Инициализация атрибутов класса."""
-        self.__base_url = "https://api.hh.ru/vacancies"
-        self.__area_url = "https://api.hh.ru/areas"
+        """Инициализатор класса HeadHunterAPI"""
+        self.__url = 'https://api.hh.ru/vacancies'
+        self.__headers = {'User-Agent': 'HH-User-Agent'}
+        self.__params = {'text': '', 'page': 0, 'per_page': 100}
+        self.__vacancies = []
 
-    def fetch_vacancies(self, search_query: str, area: str = "", page: int = 0, per_page: int = 20):
-        """Метод получения вакансий на сайте hh.ru"""
-
-        area_id = self.__fetch_area_id(area)
-        params = {"text": f"NAME:{search_query}", "area": area_id, "page": page, "per_page": per_page}
-
-        response = requests.get(self.__base_url, params=params)
+    def __api_connect(self):
+        """Подключение к API hh.ru"""
+        response = requests.get(self.__url, headers=self.__headers, params=self.__params)
         if response.status_code == 200:
-            return response.json()["items"]
-        else:
-            print("Ошибка при получении данных: ", response.status_code)
-            return []
+            return response
 
-    def __fetch_area_id(self, user_area: str):
-        """Метод поиска кода региона, населенного пункта или города на сайте hh.ru"""
-        response = requests.get(self.__area_url)
-        if response.status_code == 200:
-            data_list = response.json()
+        print("Ошибка получения данных")
 
-            if not isinstance(data_list, list):
-                print("Ошибка: ожидает список, но получен:", type(data_list))
-                return None
+    def load_vacancies(self, keyword: str) -> list:
+        """Получение вакансий по ключевому слову"""
+        self.__params['text'] = keyword
+        while self.__params.get('page') != 20:
+            response = self.__api_connect()
+            if response:
+                vacancies = response.json()['items']
+                self.__vacancies.extend(vacancies)
+                self.__params['page'] += 1
+            else:
+                break
 
-            for regions in data_list:
-                if "areas" not in regions or not isinstance(regions["areas"], list):
-                    print("Ошибка: в элементе отсутствует ключ 'areas' или он не является списком:", regions)
-                    continue
+        vacancies_list = []
 
-                for region in regions["areas"]:
-                    if region["name"] == user_area:
-                        return int(region["id"])
-                    elif not region["areas"]:
-                        continue
-                    for area in region["areas"]:
-                        if area["name"] == user_area:
-                            return int(area["id"])
-        else:
-            print("Ошибка при получении данных: ", response.status_code)
-            return None
+        if self.__vacancies:
+
+            # получение списка словарей с ключами name, url, requirement, responsibility, salary
+            for vacancy in self.__vacancies:
+                name = vacancy.get("name")
+                url = vacancy.get("alternate_url")
+                requirement = vacancy.get("snippet").get("requirement")
+                responsibility = vacancy.get("snippet").get("responsibility")
+
+                if vacancy.get("salary"):
+                    if vacancy.get("salary").get("to"):
+                        salary = vacancy.get("salary").get("to")
+                    elif vacancy.get("salary").get("from"):
+                        salary = vacancy.get("salary").get("from")
+                else:
+                    salary = 0
+
+                vac = {"name": name, "url": url, "requirement": requirement, "responsibility": responsibility,
+                       "salary": salary}
+                vacancies_list.append(vac)
+
+        return vacancies_list
